@@ -68,3 +68,11 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 ### `npm run build` fails to minify
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+
+
+Dans un environnement de développement (Vagrant) : C’est presque toujours une bonne pratique. Avec une seule VM, il n’y a pas de concurrence réelle entre plusieurs clients. nolock évite les problèmes fréquents liés à rpc.statd (service souvent instable dans Vagrant) et apporte un petit gain de performance.
+Dans un environnement de production :
+Risque : Si plusieurs clients écrivent sur les mêmes fichiers en même temps sans coordination, on peut avoir des corruptions de données ou des comportements imprévisibles.
+Conseil :
+Si tes applications gèrent elles-mêmes le verrouillage (ex. : bases de données, Redis, applications web avec leur propre système de lock), nolock reste souvent acceptable et même recommandé pour la performance.
+Si tu as besoin d’un vrai verrouillage distribué entre plusieurs serveurs, il vaut mieux supprimer nolock et s’assurer que le service NLM (rpc.statd) fonctionne correctement sur tous les clients et le serveur.

@@ -17,7 +17,10 @@
     "express": "^5.2.1",
     "helmet": "^8.1.0",
     "joi": "^17.13.3",
-    "pg": "^8.20.0"
+    "openai": "^6.34.0",
+    "pdf-parse": "^2.2.2",
+    "pg": "^8.20.0",
+    "tesseract.js": "^7.0.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"

@@ -1,7 +1,7 @@
 import { createContext, useContext, useState } from 'react';
 import { T } from '../config/constants';
 
-export const LangContext = createContext();
+const LangContext = createContext(null);
 
 export function LangProvider({ children }) {
   const [lang, setLang] = useState('fr');
@@ -12,10 +12,27 @@ export function LangProvider({ children }) {
   };
 
   return (
-    <LangContext.Provider value={{ lang, t: T[lang], toggleLang }}>
+    <LangContext.Provider
+      value={{
+        lang,
+        setLang,
+        toggleLang,
+        t: T[lang],
+      }}
+    >
       {children}
     </LangContext.Provider>
   );
 }
 
-export const useLang = () => useContext(LangContext);
+export function useLang() {
+  const ctx = useContext(LangContext);
+
+  if (!ctx) {
+    throw new Error(
+      'LangProvider is missing (wrap your App)'
+    );
+  }
+
+  return ctx;
+}

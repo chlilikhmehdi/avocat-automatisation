@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';          // ← ajout
 import { useLang } from '../context/LangContext';
 import { useToast } from '../context/ToastContext';
 import { useUsers } from '../hooks/useUsers';
@@ -11,7 +12,8 @@ import api from '../services/api';
 
 export default function UsersPage({ currentUser }) {
   const { lang, t } = useLang();
-  const toast = useToast();
+  const toast       = useToast();
+  const navigate    = useNavigate();                      // ← ajout
 
   const {
     users, pagination, loading,
@@ -23,8 +25,6 @@ export default function UsersPage({ currentUser }) {
   const [searchInput, setSearchInput] = useState('');
   const debouncedSearch = useDebounce(searchInput);
 
-  // Sync debounced search → hook
-  // (on passe via setSearch à chaque changement)
   useState(() => { setSearch(debouncedSearch); setPage(1); }, [debouncedSearch]);
 
   const [modalUser, setModalUser] = useState(null);
@@ -53,6 +53,7 @@ export default function UsersPage({ currentUser }) {
 
   return (
     <div className="main" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+
       {/* Topbar */}
       <div className="topbar">
         <div>
@@ -68,12 +69,21 @@ export default function UsersPage({ currentUser }) {
 
       {/* Content */}
       <div className="content">
-        {/* Stats */}
+
+        {/* Stats — ajout compteur clients cliquable */}
         <div className="stats-grid">
-          <StatCard icon="👥" value={stats.total}   label={t.stats.total}   bg="#eff6ff" color="#3b82f6" />
-          <StatCard icon="🛡️" value={stats.admins}  label={t.stats.admins}  bg="#fef2f2" color="#ef4444" />
-          <StatCard icon="⚖️" value={stats.lawyers} label={t.stats.lawyers} bg="#eff6ff" color="#3b82f6" />
-          <StatCard icon="👤" value={stats.clients} label={t.stats.clients} bg="#f9fafb" color="#6b7280" />
+          <StatCard icon="👥" value={stats.total}   label={t.stats?.total   || 'Total'}      bg="#eff6ff" color="#3b82f6" />
+          <StatCard icon="🛡️" value={stats.admins}  label={t.stats?.admins  || 'Admins'}     bg="#fef2f2" color="#ef4444" />
+          <StatCard icon="⚖️" value={stats.lawyers} label={t.stats?.lawyers || 'Avocats'}    bg="#eff6ff" color="#3b82f6" />
+          <StatCard
+            icon="👤"
+            value={stats.clients}
+            label={t.stats?.clients || 'Clients'}
+            bg="#f0fdf4"
+            color="#16a34a"
+            onClick={() => setRoleFilter('CLIENT')}   // filtre rapide sur clic
+            style={{ cursor: 'pointer' }}
+          />
         </div>
 
         {/* Table */}
@@ -120,7 +130,12 @@ export default function UsersPage({ currentUser }) {
               </thead>
               <tbody>
                 {users.map((u) => (
-                  <tr key={u.id}>
+                  <tr
+                    key={u.id}
+                    style={{ cursor: u.role === 'CLIENT' ? 'pointer' : 'default' }}
+                    onDoubleClick={() => u.role === 'CLIENT' && navigate(`/clients/${u.id}`)}
+                  >
+                    {/* Nom + email */}
                     <td>
                       <div className="user-cell">
                         <UserAvatar name={u.nom} role={u.role} />
@@ -130,24 +145,59 @@ export default function UsersPage({ currentUser }) {
                         </div>
                       </div>
                     </td>
+
+                    {/* Téléphone */}
                     <td style={{ color: '#64748b' }}>{u.telephone || '—'}</td>
+
+                    {/* Rôle */}
                     <td><RoleBadge role={u.role} lang={lang} /></td>
+
+                    {/* Organisation */}
                     <td style={{ fontSize: 13, color: '#64748b' }}>
                       {u.organization_name || `Org #${u.organization_id}`}
                     </td>
+
+                    {/* Date création */}
                     <td style={{ fontSize: 13, color: '#64748b' }}>
                       {u.created_at
                         ? new Date(u.created_at).toLocaleDateString(lang === 'ar' ? 'ar-MA' : 'fr-MA')
                         : '—'}
                     </td>
+
+                    {/* Actions */}
                     <td>
-                      <div style={{ display: 'flex', gap: 6 }}>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+
+                        {/* ── Bouton Profil client (uniquement pour CLIENT) ── */}
+                        {u.role === 'CLIENT' && (
+                          <button
+                            className="action-btn"
+                            style={{
+                              background:   '#f0fdf4',
+                              color:        '#16a34a',
+                              border:       '1px solid #bbf7d0',
+                              borderRadius: 8,
+                              padding:      '5px 10px',
+                              fontSize:     12,
+                              fontWeight:   600,
+                              cursor:       'pointer',
+                              display:      'flex',
+                              alignItems:   'center',
+                              gap:          4,
+                            }}
+                            onClick={() => navigate(`/clients/${u.id}`)}
+                          >
+                            👤 Profil
+                          </button>
+                        )}
+
                         <button
                           className="action-btn btn-edit"
                           onClick={() => { setModalUser(u); setModalOpen(true); }}
                         >
                           ✏️ {t.edit}
                         </button>
+
                         <button
                           className="action-btn btn-delete"
                           onClick={() => setDeleteUser(u)}
@@ -178,6 +228,13 @@ export default function UsersPage({ currentUser }) {
             </div>
           )}
         </div>
+
+        {/* ── Légende raccourci ──────────────────────────────────────────── */}
+        {users.some(u => u.role === 'CLIENT') && (
+          <p style={{ fontSize: 11, color: '#94a3b8', marginTop: 8, textAlign: 'center' }}>
+            💡 Double-clic sur une ligne client pour ouvrir son profil complet
+          </p>
+        )}
       </div>
 
       {/* Modals */}

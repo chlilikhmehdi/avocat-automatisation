@@ -15,7 +15,8 @@ const CASE_STATUSES = ['ouvert', 'en_cours', 'clôturé'];
 const createSchema = Joi.object({
   title:       Joi.string().min(3).max(200).required(),
   type:        Joi.string().valid(...CASE_TYPES).required(),
-  client_name: Joi.string().min(2).max(150).required(),
+  client_name: Joi.string().min(2).max(150).optional().allow('', null), // ← optionnel car on a client_id
+  client_id:   Joi.number().integer().positive().optional().allow(null), // ← NOUVEAU
   status:      Joi.string().valid(...CASE_STATUSES).default('ouvert'),
 });
 
@@ -23,6 +24,7 @@ const updateSchema = Joi.object({
   title:       Joi.string().min(3).max(200).optional(),
   type:        Joi.string().valid(...CASE_TYPES).optional(),
   client_name: Joi.string().min(2).max(150).optional(),
+  client_id:   Joi.number().integer().positive().optional().allow(null), // ← NOUVEAU
   status:      Joi.string().valid(...CASE_STATUSES).optional(),
 });
 
@@ -40,14 +42,39 @@ exports.createCase = async (req, res) => {
   const { error, value } = createSchema.validate(req.body);
   if (error) return ok(res, 400, {}, error.details[0].message);
 
+  // Validation métier : au moins client_name OU client_id
+  if (!value.client_name && !value.client_id) {
+    return ok(res, 400, {}, 'Un client est obligatoire (client_id ou client_name)');
+  }
+
   const lawyerId = req.user.id;
   const orgId    = req.user.organization_id;
 
   try {
+    // Si client_id fourni, récupérer le nom pour remplir client_name (rétro-compatibilité)
+    let clientName = value.client_name || '';
+    if (value.client_id && !clientName) {
+      const clientRes = await pool.query(
+        'SELECT nom FROM users WHERE id = $1 AND role = $2',
+        [value.client_id, 'CLIENT']
+      );
+      if (clientRes.rows[0]) clientName = clientRes.rows[0].nom;
+    }
+
     const { rows } = await pool.query(
-      `INSERT INTO cases (title, type, status, client_name, lawyer_id, organization_id)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [value.title, value.type, value.status || 'ouvert', value.client_name, lawyerId, orgId]
+      `INSERT INTO cases
+         (title, type, status, client_name, client_id, lawyer_id, organization_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING *`,
+      [
+        value.title,
+        value.type,
+        value.status || 'ouvert',
+        clientName,
+        value.client_id || null,
+        lawyerId,
+        orgId,
+      ]
     );
 
     // Entrée automatique dans l'historique
@@ -73,7 +100,6 @@ exports.getCasesByLawyer = async (req, res) => {
   const orgId  = req.user.organization_id;
   const offset = (parseInt(page) - 1) * parseInt(limit);
 
-  // Un LAWYER ne peut voir que ses propres dossiers
   if (req.user.role === 'LAWYER' && parseInt(lawyer_id) !== req.user.id) {
     return ok(res, 403, {}, 'Accès refusé');
   }
@@ -101,16 +127,20 @@ exports.getCasesByLawyer = async (req, res) => {
     const total = parseInt(countRes.rows[0].count);
 
     const { rows } = await pool.query(
-      `SELECT c.*,
-              u.nom AS lawyer_name,
-              COUNT(cf.id)::int AS file_count,
-              COUNT(ch.id)::int AS history_count
+      `SELECT
+         c.*,
+         u.nom  AS lawyer_name,
+         cl.nom AS client_nom,      -- ← nom du client via client_id
+         cl.email AS client_email,
+         COUNT(DISTINCT cf.id)::int AS file_count,
+         COUNT(DISTINCT ch.id)::int AS history_count
        FROM cases c
-       LEFT JOIN users u ON u.id = c.lawyer_id
-       LEFT JOIN case_files cf ON cf.case_id = c.id
+       LEFT JOIN users u  ON u.id  = c.lawyer_id
+       LEFT JOIN users cl ON cl.id = c.client_id  -- ← JOIN client
+       LEFT JOIN case_files cf   ON cf.case_id = c.id
        LEFT JOIN case_history ch ON ch.case_id = c.id
        WHERE ${where}
-       GROUP BY c.id, u.nom
+       GROUP BY c.id, u.nom, cl.nom, cl.email
        ORDER BY c.created_at DESC
        LIMIT $${idx} OFFSET $${idx + 1}`,
       [...params, parseInt(limit), offset]
@@ -141,16 +171,21 @@ exports.getCaseById = async (req, res) => {
 
   try {
     const caseRes = await pool.query(
-      `SELECT c.*, u.nom AS lawyer_name
+      `SELECT
+         c.*,
+         u.nom    AS lawyer_name,
+         cl.nom   AS client_nom,     -- ← nom du client via client_id
+         cl.email AS client_email,
+         cl.telephone AS client_telephone
        FROM cases c
-       LEFT JOIN users u ON u.id = c.lawyer_id
+       LEFT JOIN users u  ON u.id  = c.lawyer_id
+       LEFT JOIN users cl ON cl.id = c.client_id
        WHERE c.id = $1 AND c.organization_id = $2 AND c.deleted_at IS NULL`,
       [id, orgId]
     );
 
     if (!caseRes.rows[0]) return ok(res, 404, {}, 'Dossier introuvable');
 
-    // Contrôle d'accès LAWYER : ne voit que ses dossiers
     if (req.user.role === 'LAWYER' && caseRes.rows[0].lawyer_id !== req.user.id) {
       return ok(res, 403, {}, 'Accès refusé');
     }
@@ -212,9 +247,16 @@ exports.updateCase = async (req, res) => {
     const params = [];
     let idx = 1;
 
-    if (value.title)       { fields.push(`title = $${idx++}`);       params.push(value.title); }
-    if (value.type)        { fields.push(`type = $${idx++}`);        params.push(value.type); }
-    if (value.client_name) { fields.push(`client_name = $${idx++}`); params.push(value.client_name); }
+    if (value.title)     { fields.push(`title = $${idx++}`);       params.push(value.title); }
+    if (value.type)      { fields.push(`type = $${idx++}`);        params.push(value.type); }
+    if (value.client_name !== undefined) {
+      fields.push(`client_name = $${idx++}`);
+      params.push(value.client_name);
+    }
+    if (value.client_id !== undefined) {   // ← NOUVEAU
+      fields.push(`client_id = $${idx++}`);
+      params.push(value.client_id || null);
+    }
     if (value.status) {
       fields.push(`status = $${idx++}`);
       params.push(value.status);
@@ -231,7 +273,6 @@ exports.updateCase = async (req, res) => {
       params
     );
 
-    // Log dans l'historique
     await pool.query(
       `INSERT INTO case_history (case_id, action, created_by) VALUES ($1, $2, $3)`,
       [id, `Dossier mis à jour : ${Object.keys(value).join(', ')}`, req.user.id]
@@ -262,9 +303,7 @@ exports.deleteCase = async (req, res) => {
       return ok(res, 403, {}, 'Accès refusé');
     }
 
-    await pool.query(
-      'UPDATE cases SET deleted_at = NOW() WHERE id = $1', [id]
-    );
+    await pool.query('UPDATE cases SET deleted_at = NOW() WHERE id = $1', [id]);
     return ok(res, 200, {}, 'Dossier supprimé');
   } catch (err) {
     console.error('[cases/delete]', err);
@@ -274,7 +313,6 @@ exports.deleteCase = async (req, res) => {
 
 /**
  * POST /api/case/:id/history
- * Ajoute une entrée dans la timeline du dossier
  */
 exports.addHistory = async (req, res) => {
   const { error, value } = historySchema.validate(req.body);
@@ -295,8 +333,7 @@ exports.addHistory = async (req, res) => {
     }
 
     const { rows } = await pool.query(
-      `INSERT INTO case_history (case_id, action, created_by)
-       VALUES ($1, $2, $3) RETURNING *`,
+      `INSERT INTO case_history (case_id, action, created_by) VALUES ($1, $2, $3) RETURNING *`,
       [id, value.action, req.user.id]
     );
     return ok(res, 201, { data: rows[0] }, 'Entrée ajoutée');
@@ -308,7 +345,6 @@ exports.addHistory = async (req, res) => {
 
 /**
  * POST /api/case/:id/upload
- * Upload d'un fichier (traité par multer en amont)
  */
 exports.uploadFile = async (req, res) => {
   if (!req.file) return ok(res, 400, {}, 'Aucun fichier reçu');
@@ -333,7 +369,6 @@ exports.uploadFile = async (req, res) => {
       [id, req.file.filename, req.file.originalname, req.file.mimetype, req.file.size, req.user.id]
     );
 
-    // Log historique
     await pool.query(
       `INSERT INTO case_history (case_id, action, created_by) VALUES ($1, $2, $3)`,
       [id, `Fichier ajouté : ${req.file.originalname}`, req.user.id]

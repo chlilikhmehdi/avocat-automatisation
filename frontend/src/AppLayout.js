@@ -16,6 +16,10 @@ import DocumentsPage   from './pages/Documentspage';
 import api from './services/api';
 import { MOCK_CASES } from './constants/mockData';
 import { useLang } from './context/LangContext';
+import DocumentChat from './components/DocumentAI/DocumentChat';
+import AiDocumentPage from './components/DocumentAI/Aidocumentpage';
+import DocumentExtractorPage from './pages/DocumentExtractorPage';
+import ClientDetailsPage from './pages/ClientDetailsPage';
 
 // ──────────────────────────────────────────────
 // AppLayout — layout commun à toutes les routes
@@ -43,7 +47,10 @@ function AppLayout({ currentUser, onLogout }) {
         <Route path="/cases"       element={<LawyerDashboard currentUser={currentUser} />} />
         <Route path="/cases/new"   element={<CreateCase />} />
         <Route path="/cases/:id"   element={<CaseDetail currentUser={currentUser} />} />
-        <Route path="/documents"   element={<DocumentsPage currentUser={currentUser} cases={cases} />} />
+        <Route path="/documents"   element={<AiDocumentPage currentUser={currentUser} cases={cases} />} />
+        <Route path="/ai-documents" element={<AiDocumentPage />} />
+        <Route path="/document-analyzer" element={<DocumentExtractorPage />} />
+        <Route path="/clients/:id" element={<ClientDetailsPage />} />
         <Route
           path="*"
           element={<Navigate to={currentUser?.role === 'ADMIN' ? '/users' : '/cases'} replace />}

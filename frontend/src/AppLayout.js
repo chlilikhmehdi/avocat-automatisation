@@ -20,6 +20,19 @@ import DocumentChat from './components/DocumentAI/DocumentChat';
 import AiDocumentPage from './components/DocumentAI/Aidocumentpage';
 import DocumentExtractorPage from './pages/DocumentExtractorPage';
 import ClientDetailsPage from './pages/ClientDetailsPage';
+import HearingListPage from './pages/HearingListPage';
+import HearingFormPage from './pages/HearingFormPage';
+import HearingDetailsPage from './pages/HearingDetailsPage';
+import LegalDeadlinesPage from './pages/LegalDeadlinesPage';
+import CalendarPage from './pages/CalendarPage';
+import InvoiceListPage from './pages/billing/InvoiceListPage';
+import InvoiceFormPage from './pages/billing/InvoiceFormPage';
+import InvoiceDetailsPage from './pages/billing/InvoiceDetailsPage';
+import BillingNotesPage from './pages/billing/BillingNotesPage';
+import PaymentsPage from './pages/billing/PaymentsPage';
+import BillingExportPage from './pages/billing/BillingExportPage';
+import ImportPage from './pages/ImportPage';
+import ExportPage from './pages/ExportPage';
 
 // ──────────────────────────────────────────────
 // AppLayout — layout commun à toutes les routes
@@ -51,10 +64,24 @@ function AppLayout({ currentUser, onLogout }) {
         <Route path="/ai-documents" element={<AiDocumentPage />} />
         <Route path="/document-analyzer" element={<DocumentExtractorPage />} />
         <Route path="/clients/:id" element={<ClientDetailsPage />} />
+        <Route path="/calendar"           element={<CalendarPage />} />                          {/* ← AJOUTER */}
+<Route path="/hearings"           element={<HearingListPage />} />                       {/* ← AJOUTER */}
+<Route path="/hearings/new"       element={<HearingFormPage />} />                       {/* ← AJOUTER */}
+<Route path="/hearings/:id"       element={<HearingDetailsPage />} />                    {/* ← AJOUTER */}
+<Route path="/hearings/:id/edit"  element={<HearingFormPage />} />                       {/* ← AJOUTER */}
+<Route path="/legal-deadlines"    element={<LegalDeadlinesPage />} />  
         <Route
           path="*"
           element={<Navigate to={currentUser?.role === 'ADMIN' ? '/users' : '/cases'} replace />}
         />
+  <Route path="/invoices"           element={<InvoiceListPage />} />
+<Route path="/invoices/new"       element={<InvoiceFormPage />} />
+<Route path="/invoices/:id"       element={<InvoiceDetailsPage />} />
+<Route path="/billing-notes"      element={<BillingNotesPage />} />
+<Route path="/payments"           element={<PaymentsPage />} />
+<Route path="/billing/export"     element={<BillingExportPage />} />
+<Route path="/import"     element={<ImportPage />} />
+<Route path="/export"     element={<ExportPage />} />
       </Routes>
     </div>
   );

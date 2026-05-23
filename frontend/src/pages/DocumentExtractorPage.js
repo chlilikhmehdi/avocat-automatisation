@@ -9,9 +9,9 @@ const isArabic = (lang) => lang === 'ar';
 // Labels bilingues
 const L = {
   title:        { fr: 'Extracteur de documents juridiques', ar: 'مستخرج الوثائق القانونية' },
-  sub:          { fr: 'OCR + IA — Français & Arabe', ar: 'OCR + ذكاء اصطناعي — عربي وفرنسي' },
+  sub:          { fr: 'OCR + Moteur Analytique Déterministe', ar: 'OCR + محرك التحليل الحتمي' },
   dropZone:     { fr: 'Glissez un fichier ou cliquez', ar: 'اسحب ملفاً أو انقر للاختيار' },
-  dropSub:      { fr: 'PDF, JPG, PNG · 20 Mo max', ar: 'PDF، JPG، PNG · 20 ميغابايت كحد أقصى' },
+  dropSub:      { fr: 'PDF, JPG, PNG, DOCX, TXT · 20 Mo max', ar: 'PDF، JPG، PNG، DOCX، TXT · 20 ميغابايت كحد أقصى' },
   analyze:      { fr: '🔍 Analyser le document', ar: '🔍 تحليل الوثيقة' },
   analyzing:    { fr: 'Analyse en cours…', ar: 'جارٍ التحليل…' },
   reset:        { fr: '↺ Nouveau document', ar: '↺ وثيقة جديدة' },
@@ -23,18 +23,18 @@ const L = {
   defendeur:    { fr: 'Défendeur', ar: 'المدعى عليه' },
   dates:        { fr: 'Dates importantes', ar: 'التواريخ المهمة' },
   montants:     { fr: 'Montants', ar: 'المبالغ' },
-  faits:        { fr: 'Faits principaux', ar: 'الوقائع الرئيسية' },
+  faits:        { fr: 'Actions importantes', ar: 'الإجراءات الهامة' },
   delais:       { fr: 'Délais légaux', ar: 'الآجال القانونية' },
   juridiction:  { fr: 'Juridiction', ar: 'الجهة القضائية' },
   mots_cles:    { fr: 'Mots-clés', ar: 'الكلمات المفتاحية' },
   texte_ocr:    { fr: 'Texte extrait (OCR)', ar: 'النص المستخرج (OCR)' },
-  model:        { fr: 'Modèle IA', ar: 'نموذج الذكاء الاصطناعي' },
+  model:        { fr: 'Moteur d\'analyse', ar: 'محرك التحليل' },
   chars:        { fr: 'Caractères', ar: 'عدد الأحرف' },
   langue_det:   { fr: 'Langue détectée', ar: 'اللغة المكتشفة' },
   ready:        { fr: 'prêt à analyser', ar: 'جاهز للتحليل' },
   step1:        { fr: '📄 Fichier reçu', ar: '📄 تم استلام الملف' },
-  step2:        { fr: '🔡 Extraction OCR…', ar: '🔡 استخراج النص…' },
-  step3:        { fr: '🧠 Analyse IA…', ar: '🧠 تحليل الذكاء الاصطناعي…' },
+  step2:        { fr: '🔡 Extraction texte…', ar: '🔡 استخراج النص…' },
+  step3:        { fr: '⚙️ Analyse locale déterministe…', ar: '⚙️ تحليل محلي حتمي…' },
 };
 
 const t = (key, lang) => L[key]?.[lang] || L[key]?.fr || key;
@@ -190,8 +190,25 @@ export default function DocumentExtractorPage() {
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 18 }}>
             <MetaBadge icon={ar ? '🇲🇦' : '🇫🇷'} label={t('langue_det', lang)}
               value={ar ? 'العربية' : 'Français'} color={ar ? '#16a34a' : '#1e40af'} />
-            <MetaBadge icon="🤖" label={t('model', lang)}   value={result.model} />
+            <MetaBadge icon="⚙️" label={t('model', lang)}   value={result.model} color="#7c3aed" />
             <MetaBadge icon="📝" label={t('chars', lang)}    value={result.chars?.toLocaleString()} />
+            {ex.niveau_urgence && (
+              <MetaBadge 
+                icon="🚨" 
+                label={ar ? 'الاستعجال' : 'Urgence'} 
+                value={
+                  ex.niveau_urgence === 'critique' ? (ar ? 'حرجة' : 'CRITIQUE') :
+                  ex.niveau_urgence === 'élevé' ? (ar ? 'مرتفعة' : 'ÉLEVÉE') :
+                  ex.niveau_urgence === 'moyen' ? (ar ? 'متوسطة' : 'MOYENNE') :
+                  (ar ? 'منخفضة' : 'FAIBLE')
+                } 
+                color={
+                  ex.niveau_urgence === 'critique' ? '#dc2626' : 
+                  ex.niveau_urgence === 'élevé' ? '#ea580c' : 
+                  ex.niveau_urgence === 'moyen' ? '#ca8a04' : '#16a34a'
+                } 
+              />
+            )}
           </div>
 
           {/* Onglets */}
@@ -271,6 +288,42 @@ export default function DocumentExtractorPage() {
               <InfoBlock title={t('mots_cles', lang)} ar={ar}>
                 <TagList items={ex.mots_cles} color="#f3e8ff" textColor="#7c3aed" />
               </InfoBlock>
+
+              {/* Timeline des événements importants */}
+              {ex.timeline && ex.timeline.length > 0 && (
+                <InfoBlock title={ar ? '📅 الجدول الزمني للأحداث' : '📅 Chronologie des événements importants'} ar={ar}>
+                  <div style={{ 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    gap: 20, 
+                    position: 'relative', 
+                    paddingInlineStart: 24,
+                    borderInlineStart: '2px solid #cbd5e1',
+                    marginBlock: 12
+                  }}>
+                    {ex.timeline.map((evt, idx) => (
+                      <div key={idx} style={{ position: 'relative', textAlign: ar ? 'right' : 'left' }}>
+                        {/* Point de la frise */}
+                        <div style={{
+                          position: 'absolute',
+                          left: ar ? 'auto' : -29,
+                          right: ar ? -29 : 'auto',
+                          top: 5,
+                          width: 8,
+                          height: 8,
+                          borderRadius: '50%',
+                          background: 'linear-gradient(135deg,#7c3aed,#1e40af)',
+                          boxShadow: '0 0 0 3px #fff, 0 0 0 5px #7c3aed'
+                        }} />
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: '#1e40af' }}>{evt.date}</span>
+                          <span style={{ fontSize: 13, color: '#334155', lineHeight: 1.5 }}>{evt.evenement}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </InfoBlock>
+              )}
 
               {/* Copier JSON complet */}
               <button

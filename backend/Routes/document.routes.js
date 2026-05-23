@@ -16,8 +16,8 @@ const upload = multer({
   storage,
   limits: { fileSize: 20 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    const ok = /\.(pdf|jpg|jpeg|png|tiff|bmp)$/i.test(path.extname(file.originalname));
-    ok ? cb(null, true) : cb(new Error('Format non supporté (PDF, JPG, PNG, TIFF)'));
+    const ok = /\.(pdf|jpg|jpeg|png|tiff|bmp|docx|doc|txt)$/i.test(path.extname(file.originalname));
+    ok ? cb(null, true) : cb(new Error('Format non supporté (PDF, JPG, PNG, TIFF, DOCX, TXT)'));
   },
 });
 

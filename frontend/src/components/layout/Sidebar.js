@@ -42,9 +42,7 @@ export default function Sidebar({ currentUser, onLogout }) {
           { path: '/calendar',        icon: '🗓️', label: t.calendar        || 'Calendrier'           },
           { path: '/hearings',        icon: '⚖️', label: t.hearings        || 'Audiences'            },
           { path: '/legal-deadlines', icon: '⏳', label: t.legalDeadlines  || 'Délais légaux'        },
-          { path: '/documents',       icon: '📄', label: t.documents       || 'Documents'            },
-          { path: '/ai-documents',    icon: '🤖', label: t.aiDocuments     || 'Analyse IA'           },
-          { path: '/document-analyzer', icon: '🔍', label: t.documentAnalyzer || 'Extraction juridique' },
+          { path: '/document-analyzer', icon: '🔍', label: lang === 'ar' ? 'تحليل المستندات NLP' : 'Document Analyser NLP' },
         ]
       : []),
 

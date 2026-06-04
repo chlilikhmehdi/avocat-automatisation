@@ -374,6 +374,23 @@ exports.uploadFile = async (req, res) => {
       [id, `Fichier ajouté : ${req.file.originalname}`, req.user.id]
     );
 
+    // Envoi d'une notification
+    try {
+      const caseInfo = existing.rows[0];
+      const { createNotification } = require('../services/notificationService');
+      await createNotification(
+        caseInfo.lawyer_id,
+        "Nouveau document ajouté",
+        `Le document "${req.file.originalname}" a été ajouté au dossier "${caseInfo.title}".`,
+        'document',
+        'case_files',
+        rows[0].id,
+        `/cases/${id}`
+      );
+    } catch (notifErr) {
+      console.error('[Casecontroller/upload] Erreur lors de l\'envoi de la notification :', notifErr);
+    }
+
     return ok(res, 201, { data: rows[0] }, 'Fichier uploadé');
   } catch (err) {
     console.error('[cases/upload]', err);

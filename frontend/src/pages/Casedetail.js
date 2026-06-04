@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getCaseById, addHistory, uploadFile, deleteCase } from '../Cases';
+import CaseAutomationPanel from './automation/CaseAutomationPanel';
 
 export default function CaseDetail({ currentUser }) {
   const { id } = useParams();
@@ -276,6 +277,7 @@ export default function CaseDetail({ currentUser }) {
           </div>
         </div>
       </div>
+      <CaseAutomationPanel caseId={id} currentUser={currentUser} />
     </div>
   );
 }

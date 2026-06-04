@@ -91,7 +91,7 @@ export default function LoginScreen({
 
         <div className="login-demo">
           <strong>🔑 Démo / تجريبي</strong>
-          admin@benali.ma · motdepasse123
+          admin@mizan.com · admin123
         </div>
 
         <div className="field" style={{ marginBottom: 16 }}>

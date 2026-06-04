@@ -1,3 +1,4 @@
+// pages/billing/InvoiceDetailsPage.jsx
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../api';
@@ -20,14 +21,15 @@ export default function InvoiceDetailsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const [invoice, setInvoice]         = useState(null);
-  const [loading, setLoading]         = useState(true);
-  const [showPayForm, setShowPayForm] = useState(false);
-  const [payForm, setPayForm]         = useState({
+  const [invoice,      setInvoice]      = useState(null);
+  const [loading,      setLoading]      = useState(true);
+  const [showPayForm,  setShowPayForm]  = useState(false);
+  const [payForm,      setPayForm]      = useState({
     amount: '', payment_method: 'bank',
     payment_date: new Date().toISOString().split('T')[0], reference: ''
   });
-  const [saving, setSaving] = useState(false);
+  const [saving,       setSaving]       = useState(false);
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   const fetchInvoice = async () => {
     setLoading(true);
@@ -56,52 +58,111 @@ export default function InvoiceDetailsPage() {
     try {
       await api.post('/api/payments', { ...payForm, invoice_id: id });
       setShowPayForm(false);
-      setPayForm({ amount: '', payment_method: 'bank', payment_date: new Date().toISOString().split('T')[0], reference: '' });
+      setPayForm({
+        amount: '', payment_method: 'bank',
+        payment_date: new Date().toISOString().split('T')[0], reference: ''
+      });
       fetchInvoice();
-    } catch (err) { console.error(err); }
-    finally { setSaving(false); }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSaving(false);
+    }
   };
 
-  if (loading) return <div style={styles.loading}>Chargement…</div>;
+  const handleSendReminder = async () => {
+    if (!invoice.client_email) return alert('Email du client manquant.');
+    setSendingEmail(true);
+    try {
+      const html = `
+        <div style="font-family: sans-serif;">
+          <h2 style="color: #b91c1c;">Relance : Facture impayée</h2>
+          <p>Bonjour ${invoice.client_name},</p>
+          <p>La facture <strong>${invoice.invoice_number}</strong> d'un montant de
+          <strong>${invoice.amount} MAD</strong> est en attente de paiement.</p>
+          <p>Nous vous remercions de bien vouloir procéder à son règlement.</p>
+          <p>Cordialement,<br><strong>Cabinet MiZan</strong></p>
+        </div>
+      `;
+      const res = await api.post('/api/emails/send', {
+        to:      invoice.client_email,
+        subject: `Relance : Facture impayée ${invoice.invoice_number}`,
+        html,
+        caseId: invoice.case_id,
+        type:   'invoice_reminder',
+      });
+      if (res.data?.success) {
+        alert('Email de relance envoyé avec succès !');
+      } else {
+        alert("Erreur lors de l'envoi.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Erreur réseau lors de l'envoi.");
+    } finally {
+      setSendingEmail(false);
+    }
+  };
+
+  if (loading)  return <div style={styles.loading}>Chargement…</div>;
   if (!invoice) return <div style={styles.loading}>Facture introuvable.</div>;
 
-  const st = STATUS_LABELS[invoice.status] || STATUS_LABELS.draft;
-  const totalPaid = (invoice.payments || []).reduce((s, p) => s + parseFloat(p.amount), 0);
-  const remaining = parseFloat(invoice.amount) - totalPaid;
+  const st         = STATUS_LABELS[invoice.status] || STATUS_LABELS.draft;
+  const totalPaid  = (invoice.payments || []).reduce((s, p) => s + parseFloat(p.amount), 0);
+  const remaining  = parseFloat(invoice.amount) - totalPaid;
 
   return (
     <div style={styles.page}>
       <button style={styles.backBtn} onClick={() => navigate('/invoices')}>← Retour aux factures</button>
 
+      {/* En-tête facture */}
       <div style={styles.invoiceHeader}>
         <div>
           <div style={styles.invNumber}>{invoice.invoice_number}</div>
           <h1 style={styles.title}>Facture</h1>
         </div>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
           <span style={{ ...styles.badge, color: st.color, background: st.bg, fontSize: 14, padding: '6px 14px' }}>
             {st.label}
           </span>
           {invoice.status === 'draft' && (
-            <button style={styles.btnSend} onClick={() => handleStatusChange('sent')}>Marquer Envoyée</button>
+            <button style={styles.btnSend} onClick={() => handleStatusChange('sent')}>
+              Marquer Envoyée
+            </button>
           )}
           {invoice.status !== 'cancelled' && invoice.status !== 'paid' && (
-            <button style={styles.btnCancel} onClick={() => handleStatusChange('cancelled')}>Annuler</button>
+            <>
+              {invoice.client_email && (
+                <button
+                  style={{ ...styles.btnSend, background: '#4F46E5', borderColor: '#4F46E5' }}
+                  onClick={handleSendReminder}
+                  disabled={sendingEmail}
+                >
+                  {sendingEmail ? 'Envoi...' : '📧 Relancer par Email'}
+                </button>
+              )}
+              <button style={styles.btnCancel} onClick={() => handleStatusChange('cancelled')}>
+                Annuler
+              </button>
+            </>
           )}
         </div>
       </div>
 
+      {/* Infos + Client */}
       <div style={styles.grid2}>
         <div style={styles.card}>
           <h3 style={styles.sectionTitle}>Informations</h3>
           <InfoRow label="N° Facture"    value={invoice.invoice_number} mono />
           <InfoRow label="Date émission" value={invoice.issue_date ? new Date(invoice.issue_date).toLocaleDateString('fr-FR') : '—'} />
-          <InfoRow label="Échéance"      value={invoice.due_date ? new Date(invoice.due_date).toLocaleDateString('fr-FR') : '—'} />
+          <InfoRow label="Échéance"      value={invoice.due_date  ? new Date(invoice.due_date).toLocaleDateString('fr-FR')  : '—'} />
           <InfoRow label="Avocat"        value={invoice.lawyer_name} />
           {invoice.description && (
             <div style={{ marginTop: 12 }}>
               <div style={styles.infoLabel}>Description</div>
-              <div style={{ fontSize: 14, color: '#4A5568', marginTop: 4, lineHeight: 1.6 }}>{invoice.description}</div>
+              <div style={{ fontSize: 14, color: '#4A5568', marginTop: 4, lineHeight: 1.6 }}>
+                {invoice.description}
+              </div>
             </div>
           )}
         </div>
@@ -122,15 +183,19 @@ export default function InvoiceDetailsPage() {
         </div>
       </div>
 
+      {/* Montants */}
       <div style={styles.amountsBar}>
         <AmountCell label="Montant facturé" amount={invoice.amount} color="#2B6CB0" />
         <AmountCell label="Total encaissé"  amount={totalPaid}      color="#276749" />
         <AmountCell label="Reste à payer"   amount={remaining}      color={remaining > 0 ? '#C05621' : '#276749'} />
       </div>
 
+      {/* Paiements */}
       <div style={styles.card}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <h3 style={{ ...styles.sectionTitle, margin: 0 }}>Paiements ({(invoice.payments || []).length})</h3>
+          <h3 style={{ ...styles.sectionTitle, margin: 0 }}>
+            Paiements ({(invoice.payments || []).length})
+          </h3>
           {invoice.status !== 'cancelled' && invoice.status !== 'paid' && (
             <button style={styles.btnAdd} onClick={() => setShowPayForm(v => !v)}>
               {showPayForm ? '✕ Fermer' : '+ Ajouter un paiement'}
@@ -149,7 +214,9 @@ export default function InvoiceDetailsPage() {
               <Field label="Méthode">
                 <select style={styles.input} value={payForm.payment_method}
                   onChange={e => setPayForm(f => ({ ...f, payment_method: e.target.value }))}>
-                  {Object.entries(METHOD_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                  {Object.entries(METHOD_LABELS).map(([k, v]) => (
+                    <option key={k} value={k}>{v}</option>
+                  ))}
                 </select>
               </Field>
               <Field label="Date">
@@ -169,7 +236,9 @@ export default function InvoiceDetailsPage() {
         )}
 
         {(invoice.payments || []).length === 0 ? (
-          <div style={{ color: '#A0AEC0', fontSize: 14, padding: '12px 0' }}>Aucun paiement enregistré.</div>
+          <div style={{ color: '#A0AEC0', fontSize: 14, padding: '12px 0' }}>
+            Aucun paiement enregistré.
+          </div>
         ) : (
           <table style={styles.table}>
             <thead>
@@ -212,7 +281,9 @@ function InfoRow({ label, value, mono }) {
 function AmountCell({ label, amount, color }) {
   return (
     <div style={{ textAlign: 'center', flex: 1 }}>
-      <div style={{ fontSize: 22, fontWeight: 700, color }}>{Number(amount).toLocaleString('fr-FR')} MAD</div>
+      <div style={{ fontSize: 22, fontWeight: 700, color }}>
+        {Number(amount).toLocaleString('fr-FR')} MAD
+      </div>
       <div style={{ fontSize: 12, color: '#718096', marginTop: 4 }}>{label}</div>
     </div>
   );
@@ -231,7 +302,7 @@ const styles = {
   page:          { padding: 24, fontFamily: 'system-ui, sans-serif', color: '#2d3748', maxWidth: 900, margin: '0 auto' },
   loading:       { padding: 60, textAlign: 'center', color: '#718096' },
   backBtn:       { background: 'none', border: 'none', color: '#2B6CB0', cursor: 'pointer', fontSize: 14, padding: '0 0 16px', display: 'block' },
-  invoiceHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
+  invoiceHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 12 },
   invNumber:     { fontSize: 13, color: '#718096', fontFamily: 'monospace', marginBottom: 4 },
   title:         { margin: 0, fontSize: 26, fontWeight: 700, color: '#1a365d' },
   badge:         { display: 'inline-block', borderRadius: 14, fontWeight: 700 },

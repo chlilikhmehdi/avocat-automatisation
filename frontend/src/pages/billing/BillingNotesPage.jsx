@@ -1,6 +1,6 @@
 // pages/billing/BillingNotesPage.jsx
 import { useState, useEffect } from 'react';
-import api from '../../api';
+import api from '../../api'; // ← chemin corrigé
 
 export default function BillingNotesPage() {
   const [notes,    setNotes]    = useState([]);
@@ -22,13 +22,18 @@ export default function BillingNotesPage() {
     try {
       const { data } = await api.get('/api/billing-notes');
       setNotes(data.data || []);
-    } catch (err) { console.error(err); }
-    finally { setLoading(false); }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     fetchNotes();
-    api.get('/api/cases').then(r => setCases(r.data.data || r.data || [])).catch(() => {});
+    api.get('/api/cases')
+      .then(r => setCases(r.data.data || r.data || []))
+      .catch(() => {});
   }, []);
 
   const total = form.hours_worked && form.hourly_rate
@@ -55,7 +60,9 @@ export default function BillingNotesPage() {
       fetchNotes();
     } catch (err) {
       setError(err.response?.data?.message || 'Erreur lors de la création.');
-    } finally { setSaving(false); }
+    } finally {
+      setSaving(false);
+    }
   };
 
   const totalHours  = notes.reduce((s, n) => s + parseFloat(n.hours_worked || 0), 0);
@@ -75,13 +82,9 @@ export default function BillingNotesPage() {
 
       {/* Stats */}
       <div style={styles.statsRow}>
-        <StatCard label="Total heures"     value={`${totalHours.toFixed(1)} h`} color="#553C9A" />
-        <StatCard label="Total honoraires" value={`${totalAmount.toLocaleString('fr-FR')} MAD`} color="#2B6CB0" />
-        <StatCard
-          label="Taux moy / heure"
-          value={totalHours > 0 ? `${(totalAmount / totalHours).toFixed(0)} MAD` : '—'}
-          color="#C05621"
-        />
+        <StatCard label="Total heures"     value={`${totalHours.toFixed(1)} h`}                                          color="#553C9A" />
+        <StatCard label="Total honoraires" value={`${totalAmount.toLocaleString('fr-FR')} MAD`}                          color="#2B6CB0" />
+        <StatCard label="Taux moy / heure" value={totalHours > 0 ? `${(totalAmount / totalHours).toFixed(0)} MAD` : '—'} color="#C05621" />
       </div>
 
       {/* Formulaire */}

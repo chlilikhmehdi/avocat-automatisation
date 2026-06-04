@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate }         from 'react-router-dom';
 import { getCases }            from '../Cases';
 import { STATUS_META }         from '../config/constants';
+import UrgentDossiers          from './Dashboard/UrgentDossiers';
 
 export default function LawyerDashboard({ currentUser }) {
   const navigate = useNavigate();
@@ -78,8 +79,10 @@ export default function LawyerDashboard({ currentUser }) {
         ))}
       </div>
 
+      <UrgentDossiers />
+
       {/* Table */}
-      <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden' }}>
+      <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden', marginTop: 24 }}>
         <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', gap: 12 }}>
           <input
             placeholder="Rechercher par titre ou client..."

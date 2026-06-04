@@ -82,7 +82,7 @@ router.post('/upload', ...guard, upload.single('file'), async (req, res) => {
   try {
     // Vérifier que le dossier appartient bien à cet avocat
     const caseCheck = await pool.query(
-      `SELECT id FROM cases
+      `SELECT id, title, lawyer_id FROM cases
        WHERE id = $1 AND lawyer_id = $2 AND organization_id = $3 AND deleted_at IS NULL`,
       [case_id, lawyerId, orgId]
     );
@@ -94,6 +94,7 @@ router.post('/upload', ...guard, upload.single('file'), async (req, res) => {
       });
     }
 
+    const caseInfo = caseCheck.rows[0];
     const validCategory = ['contrat','piece_justificative','jugement','pv','cin','courrier','autre']
       .includes(category) ? category : 'autre';
 
@@ -119,6 +120,22 @@ router.post('/upload', ...guard, upload.single('file'), async (req, res) => {
       `INSERT INTO case_history (case_id, action, created_by) VALUES ($1, $2, $3)`,
       [case_id, `Document ajouté : ${req.file.originalname}`, lawyerId]
     );
+
+    // Envoi d'une notification
+    try {
+      const { createNotification } = require('../services/notificationService');
+      await createNotification(
+        caseInfo.lawyer_id,
+        "Nouveau document ajouté",
+        `Le document "${req.file.originalname}" a été ajouté au dossier "${caseInfo.title}".`,
+        'document',
+        'case_files',
+        rows[0].id,
+        `/cases/${case_id}`
+      );
+    } catch (notifErr) {
+      console.error('[documents/upload] Erreur lors de l\'envoi de la notification :', notifErr);
+    }
 
     return res.status(201).json({
       success: true,

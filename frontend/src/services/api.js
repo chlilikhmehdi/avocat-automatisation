@@ -72,6 +72,18 @@ const api = {
   updateCase(id, data)    { return api.request('PUT',    `/case/${id}`,  data);   },
   deleteCase(id)          { return api.request('DELETE', `/case/${id}`);          },
   addHistory(id, action)  { return api.request('POST',   `/case/${id}/history`, { action }); },
+  
+  // ── Notifications ──────────────────────────────────────────────────────────
+  getNotifications(params = {}) {
+    const q = new URLSearchParams(params).toString();
+    return api.request('GET', `/notifications?${q}`);
+  },
+  markNotificationRead(id) {
+    return api.request('PUT', `/notifications/${id}/read`);
+  },
+  markAllNotificationsRead() {
+    return api.request('PUT', '/notifications/mark-all-read');
+  }
 };
 
 export default api;

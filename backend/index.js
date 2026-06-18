@@ -3,6 +3,7 @@ if (typeof global.DOMMatrix === 'undefined') { global.DOMMatrix = class DOMMatri
 if (typeof global.ImageData === 'undefined') { global.ImageData = class ImageData {}; }
 if (typeof global.Path2D === 'undefined') { global.Path2D = class Path2D {}; }
 
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -80,6 +81,13 @@ app.use('/api/priority', priorityRoutes);
 const statisticsRoutes = require('./Routes/statistics.routes');
 app.use('/api/statistics', statisticsRoutes);
 
+// ── RAG (Retrieval Augmented Generation) ────────────────────
+const ragRoutes    = require('./Routes/ragRoutes');
+const ragCtrl      = require('./Controllers/ragController');
+const { authenticate } = require('./middleware/Auth');
+app.use('/api/rag', ragRoutes);
+app.use('/api/dossiers/:id/summary', authenticate, ragCtrl.getDossierSummary);
+
 // ── Health check ────────────────────────────────────────────
 app.get('/health', async (_, res) => {
   try {
@@ -102,6 +110,12 @@ app.listen(PORT, async () => {
 
   // Initialisation du système de notifications
   await notificationService.initTable();
+
+  // Initialisation des tables RAG + Memory
+  const ragService    = require('./services/ragService');
+  const memoryService = require('./services/memoryService');
+  await ragService.initTables().catch(e => console.error('[RAG] Init error:', e.message));
+  await memoryService.initMemoryTables().catch(e => console.error('[Memory] Init error:', e.message));
   
   // Premier contrôle des échéances
   notificationService.checkAutomaticNotifications();

@@ -31,6 +31,7 @@ import ExportPage            from './pages/ExportPage';
 import AutomationDashboard   from './pages/automation/AutomationDashboard';
 import LettreMiseEndemeurword from './pages/LmdFront';
 import StatisticsDashboard   from './pages/Statistics/StatisticsDashboard';
+import RagPage               from './pages/RagPage';
 
 // Pages client
 import ClientDashboard from './pages/client/ClientDashboard';
@@ -151,6 +152,7 @@ export default function AppLayout({ onLogout }) {
           </RequireRole>
         } />
 
+
         {/* ── Dossiers — STAFF ──────────────────────────────────────── */}
         <Route path="/cases" element={
           <RequireRole allowed={STAFF}>
@@ -185,7 +187,7 @@ export default function AppLayout({ onLogout }) {
         <Route path="/legal-deadlines" element={
           <RequireRole allowed={STAFF}><LegalDeadlinesPage /></RequireRole>
         } />
-
+  
         {/* ── Outils IA — STAFF ─────────────────────────────────────── */}
         <Route path="/generator" element={
           <RequireRole allowed={STAFF}><TemplateGeneratorPage /></RequireRole>
@@ -200,6 +202,9 @@ export default function AppLayout({ onLogout }) {
         } />
         <Route path="/ai-documents" element={
           <RequireRole allowed={STAFF}><AiDocumentPage /></RequireRole>
+        } />
+        <Route path="/rag" element={
+          <RequireRole allowed={STAFF}><RagPage /></RequireRole>
         } />
 
         {/* ── Clients (fiche) — STAFF ───────────────────────────────── */}

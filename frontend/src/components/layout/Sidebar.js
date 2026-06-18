@@ -20,9 +20,10 @@ const NAV_SECTIONS = {
         { path: '/legal-deadlines', icon: '⏳', key: 'legalDeadlines', fallback: 'Délais légaux'    },
         { path: '/generator',       icon: '✍️', key: 'generator',      fallback: 'Générateur actes' },
         { path: '/ocr',             icon: '🔍', key: 'ocr',            fallback: 'OCR & Analyse'    },
-        { path: '/documents',       icon: '🧠', key: 'documents',      fallback: 'Document IA'      },
-        { path: '/statistics',      icon: '📈', key: 'statistics',     fallback: 'Statistiques'     },
-      ],
+
+        { path: '/rag',              icon: '💡', key: 'rag',             fallback: 'Assistant RAG'    },
+        
+      ],  
     },
     {
       label: 'Facturation',
@@ -50,6 +51,7 @@ const NAV_SECTIONS = {
         { path: '/generator',       icon: '✍️', key: 'generator',      fallback: 'Générateur actes' },
         { path: '/ocr',             icon: '🔍', key: 'ocr',            fallback: 'OCR & Analyse'    },
         { path: '/documents',       icon: '🧠', key: 'documents',      fallback: 'Document IA'      },
+        { path: '/rag',              icon: '💡', key: 'rag',             fallback: 'Assistant RAG'    },
         { path: '/lmd-rm',          icon: '🧾', key: 'lmdRm',          fallback: 'LMD'              },
         { path: '/statistics',      icon: '📈', key: 'statistics',     fallback: 'Statistiques'     },
       ],
@@ -79,6 +81,7 @@ const NAV_SECTIONS = {
         { path: '/generator',       icon: '✍️', key: 'generator',      fallback: 'Générateur actes' },
         { path: '/ocr',             icon: '🔍', key: 'ocr',            fallback: 'OCR & Analyse'    },
         { path: '/documents',       icon: '🧠', key: 'documents',      fallback: 'Document IA'      },
+        { path: '/rag',              icon: '💡', key: 'rag',             fallback: 'Assistant RAG'    },
         { path: '/lmd-rm',          icon: '🧾', key: 'lmdRm',          fallback: 'LMD'              },
       ],
     },

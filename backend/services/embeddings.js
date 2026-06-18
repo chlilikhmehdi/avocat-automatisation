@@ -1,6 +1,6 @@
 const { OpenAI } = require('openai');
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
 const MODEL  = 'text-embedding-3-small'; // 1536 dims, coût minimal
 
 async function embedText(text) {

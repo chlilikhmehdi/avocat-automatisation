@@ -1,7 +1,7 @@
 const { OpenAI }            = require('openai');
 const { similaritySearch, crossDocumentSearch } = require('./vectorSearch');
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
 
 const SYSTEM_JURIDIQUE = `Tu es un assistant juridique marocain expert intégré dans l'application MiZan.
 Tu analyses des documents juridiques et réponds en français de manière précise et professionnelle.

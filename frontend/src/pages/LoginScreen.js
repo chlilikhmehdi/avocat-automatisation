@@ -63,11 +63,7 @@ export default function LoginScreen({ onLogin }) {
           MiZan
         </div>
         <p className="login-subtitle">{t.loginSubtitle}</p>
-        <div className="login-demo">
-          <strong>🔑 Démo / تجريبي</strong>
-          admin@benali.ma · motdepasse123
-        </div>
-
+       
         <div className="field" style={{ marginBottom: 16 }}>
           <label>{t.email} *</label>
           <input

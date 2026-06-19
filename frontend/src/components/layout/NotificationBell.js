@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import { useLang } from '../../context/LangContext';
 
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:4000/api';
+
 export default function NotificationBell() {
   const { lang } = useLang();
   const navigate = useNavigate();
@@ -10,8 +12,6 @@ export default function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
   const [wiggle, setWiggle] = useState(false);
   const dropdownRef = useRef(null);
-
-  const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:4000/api';
 
   // Charger les notifications existantes
   const fetchNotifications = () => {

@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
-  FolderOpen, ArrowLeft, Clock, User, Calendar,
+  FolderOpen, ArrowLeft, User, Calendar,
   AlertCircle, ChevronRight, Scale,
 } from 'lucide-react';
 

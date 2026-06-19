@@ -9,7 +9,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { getAutomationDashboard, batchClassify } from '../../api/automation';
+import { getAutomationDashboard } from '../../api/automation';
 
 // ── Config visuelle par type de dossier ───────────────────────────────────────
 const TYPE_META = {

@@ -1,5 +1,5 @@
 // pages/billing/InvoiceDetailsPage.jsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../api';
 
@@ -31,7 +31,7 @@ export default function InvoiceDetailsPage() {
   const [saving,       setSaving]       = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
 
-  const fetchInvoice = async () => {
+  const fetchInvoice = useCallback(async () => {
     setLoading(true);
     try {
       const { data } = await api.get(`/api/invoices/${id}`);
@@ -41,9 +41,9 @@ export default function InvoiceDetailsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
-  useEffect(() => { fetchInvoice(); }, [id]);
+  useEffect(() => { fetchInvoice(); }, [fetchInvoice]);
 
   const handleStatusChange = async (status) => {
     try {

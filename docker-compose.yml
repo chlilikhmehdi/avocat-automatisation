@@ -1,4 +1,49 @@
+version: '3.8'
+
 services:
+  db:
+    image: postgres:15
+    container_name: mizan_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: mehdichlilikh
+      POSTGRES_DB: mizan_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  backend:
+    build: 
+      context: ./backend
+    container_name: mizan_backend
+    ports:
+      - "4000:4000"
+    environment:
+      - DB_USER=postgres
+      - DB_HOST=db
+      - DB_NAME=mizan_db
+      - DB_PASS=mehdichlilikh
+      - DB_PORT=5432
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-your_openai_key}
+      - FRONTEND_URL=http://localhost:3000
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: mizan_frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:4000
+    depends_on:
+      - backend
+    restart: unless-stopped
+
   minio:
     image: minio/minio:latest
     container_name: minio
@@ -11,5 +56,7 @@ services:
     command: server /data --console-address ":9001"
     volumes:
       - minio_data:/data
+
 volumes:
+  postgres_data:
   minio_data:

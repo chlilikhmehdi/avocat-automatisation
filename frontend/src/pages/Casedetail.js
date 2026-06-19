@@ -21,7 +21,7 @@ export default function CaseDetail({ currentUser }) {
   const [uploadMsg, setUploadMsg] = useState('');
   const fileRef = useRef();
 
-  const loadCase = async () => {
+  const loadCase = React.useCallback(async () => {
     setLoading(true);
     try {
       const res = await getCaseById(id);
@@ -32,9 +32,9 @@ export default function CaseDetail({ currentUser }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
-  useEffect(() => { loadCase(); }, [id]);
+  useEffect(() => { loadCase(); }, [loadCase]);
 
   // ── Ajouter une entrée timeline ──────────────────────────────────────────
   const handleAddHistory = async () => {

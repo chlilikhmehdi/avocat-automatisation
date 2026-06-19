@@ -372,7 +372,6 @@ const S = {
   pre: {
     fontSize:     12,
     lineHeight:   1.7,
-    color:        '#334155',
     whiteSpace:   'pre-wrap',
     wordBreak:    'break-word',
     background:   '#0f172a',

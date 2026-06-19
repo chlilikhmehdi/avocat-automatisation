@@ -15,7 +15,7 @@
  *   <CaseAutomationPanel caseId={id} currentUser={currentUser} />
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   classifyCase, getClassification,
   generateLetter, getLetters,
